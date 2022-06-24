@@ -11,13 +11,14 @@ from lightning.app.storage import Path
 from lightning.app.components.python import TracerPythonScript
 from lightning.app.components.serve import ServeGradio
 import gradio as gr
+from lightning_hpo import BaseObjectiveWork
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchLightningScript(TracerPythonScript):
+class PyTorchLightningScript(BaseObjectiveWork):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, raise_exception=True, **kwargs)
+        super().__init__(*args, **kwargs)
         self.best_model_path = None
         self._process = None
 
@@ -59,6 +60,7 @@ class PyTorchLightningScript(TracerPythonScript):
         super().run(*args, **kwargs)
 
     def on_after_run(self, res):
+        self.best_model_score = float(res["cli"].trainer.checkpoint_callback.best_model_score)
         lightning_module = res["cli"].trainer.lightning_module
         checkpoint = torch.load(res["cli"].trainer.checkpoint_callback.best_model_path)
         lightning_module.load_state_dict(checkpoint["state_dict"])
